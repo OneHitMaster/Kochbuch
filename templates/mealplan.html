@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+
+{% block content %}
+    <section class="screen active">
+        <div class="card" style="padding: 16px;">
+            <h2>Meal-Plan</h2>
+            <p class="muted" style="margin-top: 6px;">Wähle für jeden Tag pro Mahlzeit das passende Rezept.</p>
+        </div>
+
+        <div id="mealPlanEmptyState" class="empty-state hidden" style="margin-top: 14px;">
+            <p>Noch nichts geplant. Wähle Rezepte aus.</p>
+        </div>
+
+        <div id="mealPlanGrid" style="margin-top: 14px;"></div>
+    </section>
+{% endblock %}
+

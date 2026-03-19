@@ -1,6 +1,7 @@
 import os
 
 from flask import render_template
+from flask import abort
 
 from cookmind import create_app
 from cookmind.db import close_db
@@ -25,12 +26,12 @@ def search():
 
 @app.route("/favorites")
 def favorites():
-    return render_template("favorites.html", active_page="favorites")
+    return abort(404)
 
 
 @app.route("/shopping")
 def shopping():
-    return render_template("shopping.html", active_page="shopping")
+    return abort(404)
 
 
 @app.route("/recipe/<int:recipe_id>")
@@ -46,6 +47,16 @@ def add_recipe():
 @app.route("/recipes/<int:recipe_id>/edit")
 def edit_recipe(recipe_id: int):
     return render_template("edit_recipe.html", active_page="edit", recipe_id=recipe_id)
+
+
+@app.route("/meal-plan")
+def meal_plan():
+    return render_template("mealplan.html", active_page="mealplan")
+
+
+@app.route("/settings")
+def settings():
+    return render_template("settings.html", active_page="settings")
 
 
 if __name__ == "__main__":

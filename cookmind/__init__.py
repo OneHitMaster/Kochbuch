@@ -4,8 +4,7 @@ from flask import Flask
 
 from .db import init_db
 from .blueprints.recipes_api import recipes_api
-from .blueprints.favorites_api import favorites_api
-from .blueprints.shopping_api import shopping_api
+from .blueprints.meal_plan_api import meal_plan_api
 from .blueprints.suggestions_api import suggestions_api
 
 
@@ -21,9 +20,8 @@ def create_app() -> Flask:
 
     # API blueprints
     app.register_blueprint(recipes_api)
-    app.register_blueprint(favorites_api)
-    app.register_blueprint(shopping_api)
     app.register_blueprint(suggestions_api)
+    app.register_blueprint(meal_plan_api)
 
     # Initialize DB + seed data (idempotent).
     init_db()

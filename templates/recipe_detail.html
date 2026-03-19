@@ -7,6 +7,7 @@
             <div style="padding: 14px 14px 6px;">
                 <h2 id="detailTitle" style="margin: 0;"></h2>
                 <span id="detailCategory" class="pill"></span>
+                <span id="detailMealSlot" class="pill" style="margin-left: 8px;"></span>
                 <div style="margin-top: 14px;">
                     <h3 style="margin: 0 0 8px;">Portionen</h3>
                     <div id="servingControls" class="serving-controls"></div>
@@ -20,10 +21,6 @@
         <div class="card">
             <h3 style="margin-top: 0;">Zutaten</h3>
             <div id="detailIngredients" class="checklist"></div>
-            <div style="height: 10px;"></div>
-            <button id="addSelectedToShoppingBtn" class="btn btn-primary full-width">
-                Ausgewählte Zutaten zur Einkaufsliste hinzufügen
-            </button>
         </div>
 
         <div style="height: 14px;"></div>
@@ -36,6 +33,12 @@
         <div class="card" style="margin-top: 14px; display: flex; gap: 10px; justify-content: space-between; align-items: center;">
             <a id="editRecipeBtn" class="btn btn-secondary" href="/recipes/{{ recipe_id }}/edit">Bearbeiten</a>
             <button id="deleteRecipeBtn" class="btn btn-secondary btn-danger" type="button">Löschen</button>
+        </div>
+
+        <div style="height: 14px;"></div>
+
+        <div class="card">
+            <a class="btn btn-secondary full-width" href="/meal-plan">Zum Meal-Plan</a>
         </div>
     </section>
 

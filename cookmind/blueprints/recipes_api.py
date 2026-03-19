@@ -28,6 +28,7 @@ def _parse_json_or_form() -> Dict[str, Any]:
     payload: Dict[str, Any] = {}
     payload["title"] = (form.get("title") or "").strip()
     payload["category"] = (form.get("category") or "").strip()
+    payload["meal_slot"] = (form.get("meal_slot") or "").strip()
     payload["image_url"] = (form.get("image_url") or "").strip()
     payload["servings"] = form.get("servings") or ""
 
@@ -74,6 +75,7 @@ def get_recipes():
     search = request.args.get("q", "").strip().lower()
     category = request.args.get("category", "").strip().lower()
     ingredient = request.args.get("ingredient", "").strip().lower()
+    meal_slot = request.args.get("meal_slot", "").strip().lower()
 
     rows = db.execute("SELECT * FROM recipes ORDER BY created_at DESC").fetchall()
     recipes = [parse_recipe_row(row) for row in rows]
@@ -82,6 +84,8 @@ def get_recipes():
         recipes = [r for r in recipes if search in r["title"].lower()]
     if category:
         recipes = [r for r in recipes if category in r["category"].lower()]
+    if meal_slot:
+        recipes = [r for r in recipes if str(r.get("meal_slot", "")).lower() == meal_slot]
     if ingredient:
         # Ingredient filter is treated as a comma-separated list of tokens.
         # A recipe matches when at least one token is found in one of its ingredient names.
@@ -111,6 +115,7 @@ def add_recipe():
     payload = _parse_json_or_form()
     title = (payload.get("title") or "").strip()
     category = (payload.get("category") or "").strip() or "General"
+    meal_slot = (payload.get("meal_slot") or "").strip() or "Abend"
     servings = int(payload.get("servings") or 2)
     ingredients: List[Dict[str, Any]] = payload.get("ingredients") or []
     steps: List[str] = payload.get("steps") or []
@@ -126,10 +131,10 @@ def add_recipe():
     cursor = db.cursor()
     cursor.execute(
         """
-        INSERT INTO recipes(title, category, image_url, ingredients_json, steps_json, servings)
-        VALUES (?, ?, ?, ?, ?, ?)
+        INSERT INTO recipes(title, category, meal_slot, image_url, ingredients_json, steps_json, servings)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
         """,
-        (title, category, image_url, json.dumps(ingredients), json.dumps(steps), servings),
+        (title, category, meal_slot, image_url, json.dumps(ingredients), json.dumps(steps), servings),
     )
     db.commit()
     recipe_id = cursor.lastrowid
@@ -148,6 +153,7 @@ def update_recipe(recipe_id: int):
 
     title = (payload.get("title") or "").strip()
     category = (payload.get("category") or "").strip() or existing["category"]
+    meal_slot = (payload.get("meal_slot") or "").strip() or existing["meal_slot"] or "Abend"
     servings = int(payload.get("servings") or existing["servings"] or 2)
     ingredients: List[Dict[str, Any]] = payload.get("ingredients") or []
     steps: List[str] = payload.get("steps") or []
@@ -172,6 +178,7 @@ def update_recipe(recipe_id: int):
         UPDATE recipes
         SET title = ?,
             category = ?,
+            meal_slot = ?,
             image_url = ?,
             ingredients_json = ?,
             steps_json = ?,
@@ -181,6 +188,7 @@ def update_recipe(recipe_id: int):
         (
             title,
             category,
+            meal_slot,
             image_url,
             json.dumps(ingredients),
             json.dumps(steps),

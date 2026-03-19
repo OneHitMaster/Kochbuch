@@ -1,7 +1,7 @@
 import json
 import sqlite3
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 from flask import g
 
@@ -21,111 +21,200 @@ def init_db() -> None:
     db = sqlite3.connect(DB_PATH)
     cursor = db.cursor()
 
-    cursor.execute(
-        """
-        CREATE TABLE IF NOT EXISTS recipes (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            title TEXT NOT NULL,
-            category TEXT NOT NULL,
-            image_url TEXT NOT NULL,
-            ingredients_json TEXT NOT NULL,
-            steps_json TEXT NOT NULL,
-            servings INTEGER NOT NULL DEFAULT 2,
-            is_favorite INTEGER NOT NULL DEFAULT 0,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    def table_exists(name: str) -> bool:
+        row = cursor.execute(
+            "SELECT name FROM sqlite_master WHERE type='table' AND name=?",
+            (name,),
+        ).fetchone()
+        return row is not None
+
+    def column_exists(table: str, column: str) -> bool:
+        info = cursor.execute(f"PRAGMA table_info({table})").fetchall()
+        return any(r[1] == column for r in info)
+
+    # Hard-remove migration:
+    # - remove `shopping_list` (shopping list feature)
+    # - remove `recipes.is_favorite` (favorites feature)
+    # - add `recipes.meal_slot`
+    # - add new `meal_plan` table
+    need_rebuild = False
+    if table_exists("recipes"):
+        if column_exists("recipes", "is_favorite"):
+            need_rebuild = True
+        if not column_exists("recipes", "meal_slot"):
+            need_rebuild = True
+    else:
+        need_rebuild = True
+
+    if table_exists("shopping_list"):
+        need_rebuild = True
+
+    # Rebuild when any of the expected schema elements are missing.
+    if need_rebuild:
+        # Drop tables in dependency order.
+        cursor.execute("DROP TABLE IF EXISTS meal_plan")
+        cursor.execute("DROP TABLE IF EXISTS shopping_list")
+        cursor.execute("DROP TABLE IF EXISTS recipes")
+
+        cursor.execute(
+            """
+            CREATE TABLE recipes (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                title TEXT NOT NULL,
+                category TEXT NOT NULL,
+                meal_slot TEXT NOT NULL,
+                image_url TEXT NOT NULL,
+                ingredients_json TEXT NOT NULL,
+                steps_json TEXT NOT NULL,
+                servings INTEGER NOT NULL DEFAULT 2,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+            """
         )
-        """
-    )
 
-    cursor.execute(
-        """
-        CREATE TABLE IF NOT EXISTS shopping_list (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            ingredient_name TEXT NOT NULL UNIQUE,
-            amount REAL DEFAULT 1,
-            unit TEXT DEFAULT '',
-            bought INTEGER NOT NULL DEFAULT 0
+        cursor.execute(
+            """
+            CREATE TABLE meal_plan (
+                day_index INTEGER NOT NULL,
+                meal_slot TEXT NOT NULL,
+                recipe_id INTEGER NOT NULL,
+                PRIMARY KEY(day_index, meal_slot),
+                FOREIGN KEY(recipe_id) REFERENCES recipes(id) ON DELETE CASCADE
+            )
+            """
         )
-        """
-    )
 
-    cursor.execute("CREATE INDEX IF NOT EXISTS idx_recipes_title ON recipes(title)")
-    cursor.execute("CREATE INDEX IF NOT EXISTS idx_recipes_category ON recipes(category)")
+        cursor.execute("CREATE INDEX idx_recipes_title ON recipes(title)")
+        cursor.execute("CREATE INDEX idx_recipes_category ON recipes(category)")
+        cursor.execute("CREATE INDEX idx_recipes_meal_slot ON recipes(meal_slot)")
+        cursor.execute("CREATE INDEX idx_meal_plan_recipe ON meal_plan(recipe_id)")
 
-    cursor.execute("SELECT COUNT(*) AS total FROM recipes")
-    total = cursor.fetchone()[0]
+        # Seed sample recipes.
+        def map_slot_from_category(category: str) -> str:
+            c = (category or "").strip().lower()
+            if c in {"breakfast"}:
+                return "Frühstück"
+            if c in {"lunch"}:
+                return "Mittag"
+            if c in {"dinner"}:
+                return "Abend"
+            if "snack" in c:
+                return "Snacks"
+            # Default slot.
+            return "Abend"
 
-    if total == 0:
         sample_recipes = [
             {
-                "title": "Creamy Tomato Pasta",
+                "title": "Käse-Tomaten-Pasta",
                 "category": "Dinner",
+                "meal_slot": map_slot_from_category("Dinner"),
                 "image_url": "/static/images/placeholder.svg",
                 "servings": 2,
                 "ingredients": [
                     {"name": "Pasta", "amount": 200, "unit": "g"},
-                    {"name": "Tomato Sauce", "amount": 250, "unit": "ml"},
-                    {"name": "Garlic", "amount": 2, "unit": "cloves"},
+                    {"name": "Tomatensoße", "amount": 250, "unit": "ml"},
+                    {"name": "Knoblauch", "amount": 2, "unit": "Zehen"},
                     {"name": "Parmesan", "amount": 40, "unit": "g"},
                 ],
                 "steps": [
-                    "Cook pasta in salted water until al dente.",
-                    "Saute garlic in olive oil for 1 minute.",
-                    "Add tomato sauce and simmer for 5 minutes.",
-                    "Combine pasta with sauce and top with parmesan.",
+                    "Pasta in Salzwasser al dente kochen.",
+                    "Knoblauch kurz in etwas Öl anbraten (ca. 1 Minute).",
+                    "Tomatensoße hinzufügen und 5 Minuten köcheln lassen.",
+                    "Pasta mit Soße mischen und Parmesan darüber geben.",
                 ],
             },
             {
-                "title": "Greek Yogurt Bowl",
+                "title": "Griechische Joghurt-Bowl",
                 "category": "Breakfast",
+                "meal_slot": map_slot_from_category("Breakfast"),
                 "image_url": "/static/images/placeholder.svg",
                 "servings": 1,
                 "ingredients": [
-                    {"name": "Greek Yogurt", "amount": 200, "unit": "g"},
-                    {"name": "Blueberries", "amount": 60, "unit": "g"},
-                    {"name": "Honey", "amount": 1, "unit": "tbsp"},
+                    {"name": "Griechischer Joghurt", "amount": 200, "unit": "g"},
+                    {"name": "Blaubeeren", "amount": 60, "unit": "g"},
+                    {"name": "Honig", "amount": 1, "unit": "EL"},
                     {"name": "Granola", "amount": 40, "unit": "g"},
                 ],
                 "steps": [
-                    "Add yogurt to a bowl.",
-                    "Top with blueberries and granola.",
-                    "Drizzle honey over the top and serve.",
+                    "Joghurt in eine Schüssel geben.",
+                    "Blaubeeren und Granola darüber verteilen.",
+                    "Honig drüber geben und direkt essen.",
                 ],
             },
             {
-                "title": "Avocado Chicken Salad",
+                "title": "Avocado-Hähnchensalat",
                 "category": "Lunch",
+                "meal_slot": map_slot_from_category("Lunch"),
                 "image_url": "/static/images/placeholder.svg",
                 "servings": 2,
                 "ingredients": [
-                    {"name": "Chicken Breast", "amount": 250, "unit": "g"},
-                    {"name": "Avocado", "amount": 1, "unit": "pcs"},
-                    {"name": "Mixed Greens", "amount": 120, "unit": "g"},
-                    {"name": "Lemon Juice", "amount": 2, "unit": "tbsp"},
+                    {"name": "Hähnchenbrust", "amount": 250, "unit": "g"},
+                    {"name": "Avocado", "amount": 1, "unit": "Stk"},
+                    {"name": "Gemischter Salat", "amount": 120, "unit": "g"},
+                    {"name": "Zitronensaft", "amount": 2, "unit": "EL"},
                 ],
                 "steps": [
-                    "Cook and slice chicken breast.",
-                    "Mix greens, avocado, and lemon juice.",
-                    "Add chicken on top and toss gently.",
+                    "Hähnchenbrust garen und in Stücke schneiden.",
+                    "Salat, Avocado und Zitronensaft mischen.",
+                    "Hähnchen obenauf geben und vorsichtig vermengen.",
+                ],
+            },
+            {
+                "title": "Banane-Schoko-Snack",
+                "category": "Snack",
+                "meal_slot": map_slot_from_category("Snack"),
+                "image_url": "/static/images/placeholder.svg",
+                "servings": 1,
+                "ingredients": [
+                    {"name": "Banane", "amount": 1, "unit": "Stk"},
+                    {"name": "Kakaopulver", "amount": 1, "unit": "EL"},
+                    {"name": "Honig", "amount": 1, "unit": "TL"},
+                ],
+                "steps": [
+                    "Banane in Scheiben schneiden.",
+                    "Mit Kakaopulver bestäuben und Honig darüber geben.",
+                    "Kurz ziehen lassen und genießen.",
                 ],
             },
         ]
 
+        # Insert recipes.
+        recipe_ids: List[int] = []
         for recipe in sample_recipes:
             cursor.execute(
                 """
-                INSERT INTO recipes(title, category, image_url, ingredients_json, steps_json, servings)
-                VALUES (?, ?, ?, ?, ?, ?)
+                INSERT INTO recipes(title, category, meal_slot, image_url, ingredients_json, steps_json, servings)
+                VALUES (?, ?, ?, ?, ?, ?, ?)
                 """,
                 (
                     recipe["title"],
                     recipe["category"],
+                    recipe["meal_slot"],
                     recipe["image_url"],
                     json.dumps(recipe["ingredients"]),
                     json.dumps(recipe["steps"]),
                     recipe["servings"],
                 ),
             )
+            recipe_ids.append(cursor.lastrowid)
+
+        # Seed a small meal plan: first week entries.
+        # day_index 0..6 (Mo..So), assign one recipe per meal_slot.
+        cursor.execute(
+            "SELECT id, meal_slot FROM recipes"
+        )
+        rows = cursor.fetchall()
+        by_slot: Dict[str, int] = {r[1]: r[0] for r in rows}
+        slots = ["Frühstück", "Mittag", "Abend", "Snacks"]
+        for day_index in range(7):
+            # Only assign slots we have recipes for.
+            for slot in slots:
+                rid = by_slot.get(slot)
+                if rid is not None:
+                    cursor.execute(
+                        "INSERT OR REPLACE INTO meal_plan(day_index, meal_slot, recipe_id) VALUES (?, ?, ?)",
+                        (day_index, slot, rid),
+                    )
 
     db.commit()
     db.close()
@@ -142,11 +231,11 @@ def parse_recipe_row(row: sqlite3.Row) -> Dict[str, Any]:
         "id": row["id"],
         "title": row["title"],
         "category": row["category"],
+        "meal_slot": row["meal_slot"],
         "image_url": row["image_url"],
         "ingredients": json.loads(row["ingredients_json"]),
         "steps": json.loads(row["steps_json"]),
         "servings": row["servings"],
-        "is_favorite": bool(row["is_favorite"]),
     }
 
 

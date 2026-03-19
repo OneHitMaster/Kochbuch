@@ -394,6 +394,13 @@ body {
     color: var(--muted);
 }
 
+.slot-header {
+    grid-column: 1 / -1;
+    color: var(--muted);
+    font-weight: 700;
+    margin: 6px 2px 2px;
+}
+
 .loader {
     text-align: center;
     color: var(--muted);

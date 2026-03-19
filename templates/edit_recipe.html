@@ -8,6 +8,12 @@
                 <div>
                     <input id="newTitle" class="input" placeholder="Rezept-Titel">
                     <input id="newCategory" class="input" placeholder="Kategorie (z.B. Abendessen)">
+                    <select id="newMealSlot" class="input" style="appearance: none;" aria-label="Mahlzeit auswählen">
+                        <option value="Frühstück">Frühstück</option>
+                        <option value="Mittag">Mittag</option>
+                        <option value="Abend" selected>Abend</option>
+                        <option value="Snacks">Snacks</option>
+                    </select>
                     <input id="newImageFile" class="input" type="file" accept="image/*">
                     <input id="newImage" class="input" placeholder="Bild-URL (optional)">
                     <input id="newServings" class="input" type="number" min="1" value="2" placeholder="Portionen">

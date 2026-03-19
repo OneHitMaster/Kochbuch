@@ -15,10 +15,10 @@
             <div>
                 <h1>CookMind</h1>
                 <p class="subtitle">
-                    {% if active_page == "home" %}Deine Rezepte, schön organisiert{% endif %}
-                    {% if active_page == "search" %}Finde Rezepte nach Zutaten{% endif %}
-                    {% if active_page == "favorites" %}Deine Favoriten{% endif %}
-                    {% if active_page == "shopping" %}Eine klare Einkaufsliste{% endif %}
+                    {% if active_page == "home" %}Deine Rezepte, nach Mahlzeiten sortiert{% endif %}
+                    {% if active_page == "search" %}Finde Rezepte nach Zutaten oder Namen{% endif %}
+                    {% if active_page == "mealplan" %}Plane deine Woche in Sekunden{% endif %}
+                    {% if active_page == "settings" %}Einstellungen & Reset{% endif %}
                     {% if active_page == "recipe" %}Rezept-Details{% endif %}
                     {% if active_page == "add" %}Neues Rezept erstellen{% endif %}
                     {% if active_page == "edit" %}Rezept bearbeiten{% endif %}
@@ -32,20 +32,29 @@
 
         <nav class="bottom-nav">
             <a class="nav-item {% if active_page == 'home' %}active{% endif %}" href="/">
-                <svg viewBox="0 0 24 24" class="nav-icon"><path d="M3 10.5L12 3l9 7.5V21a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg>
+                <svg viewBox="0 0 24 24" class="nav-icon">
+                    <path d="M3 10.5L12 3l9 7.5V21a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/>
+                </svg>
                 <span>Start</span>
             </a>
             <a class="nav-item {% if active_page == 'search' %}active{% endif %}" href="/search">
-                <svg viewBox="0 0 24 24" class="nav-icon"><path d="M10.5 3a7.5 7.5 0 1 1 4.74 13.32l4.72 4.72-1.42 1.42-4.72-4.72A7.5 7.5 0 0 1 10.5 3zm0 2a5.5 5.5 0 1 0 0 11 5.5 5.5 0 0 0 0-11z"/></svg>
+                <svg viewBox="0 0 24 24" class="nav-icon">
+                    <path d="M10.5 3a7.5 7.5 0 1 1 4.74 13.32l4.72 4.72-1.42 1.42-4.72-4.72A7.5 7.5 0 0 1 10.5 3zm0 2a5.5 5.5 0 1 0 0 11 5.5 5.5 0 0 0 0-11z"/>
+                </svg>
                 <span>Suche</span>
             </a>
-            <a class="nav-item {% if active_page == 'favorites' %}active{% endif %}" href="/favorites">
-                <svg viewBox="0 0 24 24" class="nav-icon"><path d="M12 21s-6.72-4.35-9.38-8.39C.24 9.17 1.42 4.9 5.14 3.58A5.28 5.28 0 0 1 12 6.1a5.28 5.28 0 0 1 6.86-2.52c3.72 1.32 4.9 5.59 2.52 9.03C18.72 16.65 12 21 12 21z"/></svg>
-                <span>Favoriten</span>
+            <a class="nav-item {% if active_page == 'mealplan' %}active{% endif %}" href="/meal-plan">
+                <svg viewBox="0 0 24 24" class="nav-icon">
+                    <path d="M7 2h2v2h6V2h2v2h2a1 1 0 0 1 1 1v16a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1h2V2zm14 7H3v12h18V9z"/>
+                    <path d="M7 12h5v2H7v-2zm0 4h9v2H7v-2z" fill="currentColor"/>
+                </svg>
+                <span>Meal-Plan</span>
             </a>
-            <a class="nav-item {% if active_page == 'shopping' %}active{% endif %}" href="/shopping">
-                <svg viewBox="0 0 24 24" class="nav-icon"><path d="M3 4h2l2.4 10.4a1 1 0 0 0 .98.8h8.72a1 1 0 0 0 .98-.8L21 7H7"/><circle cx="10" cy="20" r="1.5"/><circle cx="18" cy="20" r="1.5"/></svg>
-                <span>Einkaufsliste</span>
+            <a class="nav-item {% if active_page == 'settings' %}active{% endif %}" href="/settings">
+                <svg viewBox="0 0 24 24" class="nav-icon">
+                    <path d="M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8zm8.94 3.35-1.46-.84c.05-.32.08-.65.08-.99s-.03-.67-.08-.99l1.46-.84a.5.5 0 0 0 .18-.68l-1.5-2.6a.5.5 0 0 0-.64-.22l-1.62.61c-.5-.38-1.06-.68-1.67-.88L14 1.91a.5.5 0 0 0-.5-.41h-3a.5.5 0 0 0-.5.41l-.58 1.65c-.61.2-1.17.5-1.67.88L4.13 3.83a.5.5 0 0 0-.64.22l-1.5 2.6a.5.5 0 0 0 .18.68l1.46.84c-.05.32-.08.65-.08.99s.03.67.08.99l-1.46.84a.5.5 0 0 0-.18.68l1.5 2.6c.14.24.43.34.68.22l1.62-.61c.5.38 1.06.68 1.67.88l.58 1.65c.06.25.28.41.5.41h3c.22 0 .44-.16.5-.41l.58-1.65c.61-.2 1.17-.5 1.67-.88l1.62.61c.25.12.54.02.68-.22l1.5-2.6a.5.5 0 0 0-.18-.68z"/>
+                </svg>
+                <span>Einstellungen</span>
             </a>
         </nav>
     </div>

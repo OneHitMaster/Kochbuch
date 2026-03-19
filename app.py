@@ -43,6 +43,11 @@ def add_recipe():
     return render_template("add_recipe.html", active_page="add")
 
 
+@app.route("/recipes/<int:recipe_id>/edit")
+def edit_recipe(recipe_id: int):
+    return render_template("edit_recipe.html", active_page="edit", recipe_id=recipe_id)
+
+
 if __name__ == "__main__":
     # Pi-friendly: default debug off. Enable with `COOKMIND_DEBUG=1`.
     debug = os.environ.get("COOKMIND_DEBUG", "0") == "1"

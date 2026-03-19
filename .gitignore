@@ -12,6 +12,9 @@ venv/
 # Flask / app runtime files
 instance/
 
+# Uploaded images (runtime data)
+static/images/uploads/
+
 # Editor / OS files
 .vscode/
 .idea/

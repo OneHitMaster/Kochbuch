@@ -8,7 +8,7 @@
                 <h2 id="detailTitle" style="margin: 0;"></h2>
                 <span id="detailCategory" class="pill"></span>
                 <div style="margin-top: 14px;">
-                    <h3 style="margin: 0 0 8px;">Servings</h3>
+                    <h3 style="margin: 0 0 8px;">Portionen</h3>
                     <div id="servingControls" class="serving-controls"></div>
                     <p id="servingInfo" class="muted" style="margin-top: 6px;"></p>
                 </div>
@@ -18,19 +18,24 @@
         <div style="height: 14px;"></div>
 
         <div class="card">
-            <h3 style="margin-top: 0;">Ingredients</h3>
+            <h3 style="margin-top: 0;">Zutaten</h3>
             <div id="detailIngredients" class="checklist"></div>
             <div style="height: 10px;"></div>
             <button id="addSelectedToShoppingBtn" class="btn btn-primary full-width">
-                Add selected ingredients to shopping list
+                Ausgewählte Zutaten zur Einkaufsliste hinzufügen
             </button>
         </div>
 
         <div style="height: 14px;"></div>
 
         <div class="card">
-            <h3 style="margin-top: 0;">Instructions</h3>
+            <h3 style="margin-top: 0;">Anleitung</h3>
             <ol id="detailSteps" style="margin-top: 10px;"></ol>
+        </div>
+
+        <div class="card" style="margin-top: 14px; display: flex; gap: 10px; justify-content: space-between; align-items: center;">
+            <a id="editRecipeBtn" class="btn btn-secondary" href="/recipes/{{ recipe_id }}/edit">Bearbeiten</a>
+            <button id="deleteRecipeBtn" class="btn btn-secondary btn-danger" type="button">Löschen</button>
         </div>
     </section>
 

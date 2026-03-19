@@ -13,9 +13,17 @@ function toastEl() {
 }
 
 async function api(url, options = {}) {
+    const body = options.body;
+    const headers = { ...(options.headers || {}) };
+    const isFormData = typeof FormData !== "undefined" && body instanceof FormData;
+
+    if (body !== undefined && body !== null && !isFormData && headers["Content-Type"] === undefined) {
+        headers["Content-Type"] = "application/json";
+    }
+
     const response = await fetch(url, {
-        headers: { "Content-Type": "application/json" },
         ...options,
+        headers,
     });
     if (!response.ok) {
         const err = await response.json().catch(() => ({}));
@@ -35,7 +43,7 @@ function showToast(message) {
 }
 
 function withLoading(container) {
-    container.innerHTML = `<div class="loader">Loading...</div>`;
+    container.innerHTML = `<div class="loader">Lädt...</div>`;
 }
 
 function formatIngredientText(item, multiplier = 1) {
@@ -103,11 +111,32 @@ function parseStepsInput(raw) {
         .filter(Boolean);
 }
 
+let currentImageObjectUrl = null;
+
+function getCurrentPreviewImageUrl() {
+    const fileInput = document.getElementById("newImageFile");
+    const imageUrlInput = document.getElementById("newImage");
+
+    if (fileInput && fileInput.files && fileInput.files[0]) {
+        if (!currentImageObjectUrl) {
+            currentImageObjectUrl = URL.createObjectURL(fileInput.files[0]);
+        }
+        return currentImageObjectUrl;
+    }
+
+    // If no file is selected, revoke previously created object URLs.
+    if (currentImageObjectUrl) {
+        URL.revokeObjectURL(currentImageObjectUrl);
+        currentImageObjectUrl = null;
+    }
+
+    return imageUrlInput?.value?.trim() || "";
+}
+
 function renderAddPreview() {
-    const title = document.getElementById("newTitle")?.value || "Your Recipe Title";
-    const category = document.getElementById("newCategory")?.value || "Category";
-    const imageInput = document.getElementById("newImage")?.value || "";
-    const image = imageInput || "/static/images/placeholder.svg";
+    const title = document.getElementById("newTitle")?.value || "Dein Rezept";
+    const category = document.getElementById("newCategory")?.value || "Kategorie";
+    const image = getCurrentPreviewImageUrl() || "/static/images/placeholder.svg";
     const preview = document.getElementById("recipePreview");
     if (!preview) return;
     preview.innerHTML = `
@@ -160,7 +189,7 @@ async function toggleFavorite(btn) {
     if (document.body.dataset.page === "favorites") {
         await loadFavorites();
     }
-    showToast("Favorite updated");
+    showToast("Favorit aktualisiert");
 }
 
 async function runSearch() {
@@ -175,7 +204,7 @@ async function runSearch() {
     withLoading(results);
     const data = await api(`/api/recipes?${params.toString()}`);
     if (data.length === 0) {
-        results.innerHTML = `<div class="empty-state">No matching recipes found.</div>`;
+        results.innerHTML = `<div class="empty-state">Keine passenden Rezepte gefunden.</div>`;
         return;
     }
     results.innerHTML = data.map(renderRecipeCard).join("");
@@ -191,14 +220,14 @@ async function runSuggestions() {
         body: JSON.stringify({ ingredients }),
     });
     if (!suggestions.length) {
-        results.innerHTML = `<div class="empty-state">No suggestions yet. Try more ingredients.</div>`;
+        results.innerHTML = `<div class="empty-state">Noch keine Vorschläge. Probier andere Zutaten.</div>`;
         return;
     }
     results.innerHTML = suggestions
         .map(
             (item) => `
         <div class="card" style="margin-bottom: 14px; padding: 12px;">
-            <div class="muted">Match score: ${(item.score * 100).toFixed(0)}%</div>
+            <div class="muted">Übereinstimmung: ${(item.score * 100).toFixed(0)}%</div>
             ${renderRecipeCard(item.recipe)}
         </div>
     `
@@ -236,7 +265,7 @@ function renderRecipeDetail(recipe, checkedIndices = null) {
         )
         .join("");
 
-    servingInfo.textContent = `Base servings: ${baseServings} | Now: ${baseServings * multiplier}`;
+    servingInfo.textContent = `Basisportionen: ${baseServings} | Jetzt: ${baseServings * multiplier}`;
 
     // `checkedIndices === null` means "default rendering".
     // If the user deselects everything, we must preserve that empty selection.
@@ -281,7 +310,7 @@ async function initRecipeDetail() {
     btn.addEventListener("click", async () => {
         const selected = [...document.querySelectorAll('#detailIngredients input[data-ingredient-idx]:checked')];
         if (selected.length === 0) {
-            showToast("Select at least one ingredient");
+            showToast("Bitte wähle mindestens eine Zutat");
             return;
         }
         const ingredientsScaled = selected.map((n) => {
@@ -295,35 +324,137 @@ async function initRecipeDetail() {
             body: JSON.stringify({ ingredients: ingredientsScaled }),
         });
         await loadShopping();
-        showToast("Added to shopping list");
+        showToast("Zum Einkauf hinzugefügt");
       });
+
+    const deleteBtn = document.getElementById("deleteRecipeBtn");
+    if (deleteBtn) {
+        deleteBtn.addEventListener("click", async () => {
+            const ok = window.confirm("Rezept wirklich löschen?");
+            if (!ok) return;
+            try {
+                await api(`/api/recipes/${recipe.id}`, { method: "DELETE" });
+                showToast("Rezept gelöscht");
+                window.location.href = "/";
+            } catch (err) {
+                showToast(err.message || "Löschen fehlgeschlagen");
+            }
+        });
+    }
 }
 
 async function initAddRecipe() {
     renderAddPreview();
-    ["newTitle", "newCategory", "newImage", "newServings", "newIngredients", "newSteps"].forEach((id) => {
+    const fieldsToRerender = ["newTitle", "newCategory", "newImage", "newServings", "newIngredients", "newSteps"];
+    fieldsToRerender.forEach((id) => {
         const node = document.getElementById(id);
         if (node) node.addEventListener("input", () => renderAddPreview());
     });
+
+    const fileInput = document.getElementById("newImageFile");
+    if (fileInput) {
+        fileInput.addEventListener("change", () => {
+            // Ensure the preview updates when a different file is chosen.
+            if (currentImageObjectUrl) {
+                URL.revokeObjectURL(currentImageObjectUrl);
+                currentImageObjectUrl = null;
+            }
+            renderAddPreview();
+        });
+    }
 
     const saveBtn = document.getElementById("saveRecipeBtn");
     if (!saveBtn) return;
 
     saveBtn.addEventListener("click", async () => {
         try {
-            const payload = {
-                title: document.getElementById("newTitle").value.trim(),
-                category: document.getElementById("newCategory").value.trim() || "General",
-                image_url: document.getElementById("newImage").value.trim(),
-                servings: Number(document.getElementById("newServings").value || 2),
-                ingredients: parseIngredientsInput(document.getElementById("newIngredients").value),
-                steps: parseStepsInput(document.getElementById("newSteps").value),
-            };
-            await api("/api/recipes", { method: "POST", body: JSON.stringify(payload) });
-            showToast("Recipe created");
+            const formData = new FormData();
+            formData.append("title", document.getElementById("newTitle").value.trim());
+            formData.append("category", document.getElementById("newCategory").value.trim() || "General");
+            formData.append("servings", String(Number(document.getElementById("newServings").value || 2)));
+            formData.append("ingredients", JSON.stringify(parseIngredientsInput(document.getElementById("newIngredients").value)));
+            formData.append("steps", JSON.stringify(parseStepsInput(document.getElementById("newSteps").value)));
+
+            const imageUrl = document.getElementById("newImage")?.value?.trim() || "";
+            if (imageUrl) formData.append("image_url", imageUrl);
+
+            const file = document.getElementById("newImageFile")?.files?.[0];
+            if (file) formData.append("image_file", file);
+
+            await api("/api/recipes", { method: "POST", body: formData });
+            showToast("Rezept erstellt");
             window.location.href = "/";
         } catch (err) {
-            showToast(err.message || "Failed to save recipe");
+            showToast(err.message || "Konnte Rezept nicht speichern");
+        }
+    });
+}
+
+async function initEditRecipe() {
+    const recipeId = window.__COOKMIND_EDIT_RECIPE_ID__;
+    if (!recipeId) return;
+
+    const recipe = await api(`/api/recipes/${recipeId}`);
+
+    // Populate form
+    document.getElementById("newTitle").value = recipe.title || "";
+    document.getElementById("newCategory").value = recipe.category || "";
+    document.getElementById("newServings").value = recipe.servings || 2;
+    document.getElementById("newImage").value = recipe.image_url || "";
+
+    const ingredientsText = (recipe.ingredients || [])
+        .map((i) => `${i.name}|${i.amount}|${i.unit || ""}`)
+        .join("\n");
+    document.getElementById("newIngredients").value = ingredientsText;
+    document.getElementById("newSteps").value = (recipe.steps || []).join("\n");
+
+    // Clear file input and reset preview object URL.
+    const fileInput = document.getElementById("newImageFile");
+    if (fileInput) fileInput.value = "";
+    if (currentImageObjectUrl) {
+        URL.revokeObjectURL(currentImageObjectUrl);
+        currentImageObjectUrl = null;
+    }
+
+    renderAddPreview();
+
+    ["newTitle", "newCategory", "newImage"].forEach((id) => {
+        const node = document.getElementById(id);
+        if (node) node.addEventListener("input", () => renderAddPreview());
+    });
+    if (fileInput) {
+        fileInput.addEventListener("change", () => {
+            if (currentImageObjectUrl) {
+                URL.revokeObjectURL(currentImageObjectUrl);
+                currentImageObjectUrl = null;
+            }
+            renderAddPreview();
+        });
+    }
+
+    const saveBtn = document.getElementById("saveRecipeBtn");
+    if (!saveBtn) return;
+
+    saveBtn.addEventListener("click", async () => {
+        try {
+            const formData = new FormData();
+            formData.append("title", document.getElementById("newTitle").value.trim());
+            formData.append("category", document.getElementById("newCategory").value.trim() || "General");
+            formData.append("servings", String(Number(document.getElementById("newServings").value || 2)));
+            formData.append("ingredients", JSON.stringify(parseIngredientsInput(document.getElementById("newIngredients").value)));
+            formData.append("steps", JSON.stringify(parseStepsInput(document.getElementById("newSteps").value)));
+
+            const imageUrl = document.getElementById("newImage")?.value?.trim() || "";
+            if (imageUrl) formData.append("image_url", imageUrl);
+
+            const file = document.getElementById("newImageFile")?.files?.[0];
+            if (file) formData.append("image_file", file);
+
+            await api(`/api/recipes/${recipeId}`, { method: "PUT", body: formData });
+            showToast("Änderungen gespeichert");
+            window.location.href = `/recipe/${recipeId}`;
+        } catch (err) {
+            showToast(err.message || "Konnte Änderungen nicht speichern");
         }
     });
 }
@@ -346,7 +477,7 @@ function bindGlobalEvents() {
             await api(`/api/shopping-list/${itemId}/toggle`, { method: "POST" });
             await loadShopping();
         } catch (err) {
-            showToast(err.message || "Failed to update");
+            showToast(err.message || "Konnte Einkaufsliste nicht aktualisieren");
         }
     });
 }
@@ -374,6 +505,10 @@ async function init() {
     if (page === "add") {
         await initAddRecipe();
     }
+
+    if (page === "edit") {
+        await initEditRecipe();
+    }
 }
 
-init().catch((err) => showToast(err.message || "Initialization failed"));
+init().catch((err) => showToast(err.message || "Initialisierung fehlgeschlagen"));

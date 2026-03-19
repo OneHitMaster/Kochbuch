@@ -153,6 +153,12 @@ body {
     color: #dbe3ff;
 }
 
+.btn-danger {
+    background: rgba(255, 101, 132, 0.16);
+    color: #ff7b95;
+    border: 1px solid rgba(255, 101, 132, 0.25);
+}
+
 .full-width {
     width: 100%;
 }

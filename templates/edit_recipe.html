@@ -3,7 +3,7 @@
 {% block content %}
     <section class="screen active">
         <div class="card" style="padding: 16px;">
-            <h2>Rezept hinzufügen</h2>
+            <h2>Rezept bearbeiten</h2>
             <div class="form-grid" style="margin-top: 12px;">
                 <div>
                     <input id="newTitle" class="input" placeholder="Rezept-Titel">
@@ -13,7 +13,7 @@
                     <input id="newServings" class="input" type="number" min="1" value="2" placeholder="Portionen">
                     <textarea id="newIngredients" class="input textarea" placeholder="Zutaten (eine pro Zeile, z.B. Zucker|100|g)"></textarea>
                     <textarea id="newSteps" class="input textarea" placeholder="Schritte (eine pro Zeile)"></textarea>
-                    <button id="saveRecipeBtn" class="btn btn-primary full-width">Speichern</button>
+                    <button id="saveRecipeBtn" class="btn btn-primary full-width">Änderungen speichern</button>
                 </div>
                 <div>
                     <h3 style="margin-top: 0;">Live-Vorschau</h3>
@@ -22,5 +22,10 @@
             </div>
         </div>
     </section>
+
+    <script>
+        // Minimal bootstrapping: recipe id comes from the URL.
+        window.__COOKMIND_EDIT_RECIPE_ID__ = {{ recipe_id }};
+    </script>
 {% endblock %}
 

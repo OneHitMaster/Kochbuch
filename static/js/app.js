@@ -1,51 +1,16 @@
 const state = {
-    recipes: [],
     favorites: [],
     shopping: [],
     activeRecipe: null,
-};
-
-const el = {
-    screens: {
-        home: document.getElementById("screen-home"),
-        search: document.getElementById("screen-search"),
-        favorites: document.getElementById("screen-favorites"),
-        shopping: document.getElementById("screen-shopping"),
-    },
-    navItems: document.querySelectorAll(".nav-item"),
-    homeRecipeList: document.getElementById("homeRecipeList"),
-    favoriteRecipeList: document.getElementById("favoriteRecipeList"),
-    shoppingList: document.getElementById("shoppingList"),
-    searchResults: document.getElementById("searchResults"),
-    homeEmptyState: document.getElementById("homeEmptyState"),
-    favoritesEmptyState: document.getElementById("favoritesEmptyState"),
-    shoppingEmptyState: document.getElementById("shoppingEmptyState"),
-    recipeModal: document.getElementById("recipeModal"),
-    addRecipeModal: document.getElementById("addRecipeModal"),
-    recipeDetailContent: document.getElementById("recipeDetailContent"),
-    closeRecipeModal: document.getElementById("closeRecipeModal"),
-    closeAddRecipeModal: document.getElementById("closeAddRecipeModal"),
-    openAddRecipeBtn: document.getElementById("openAddRecipeBtn"),
-    saveRecipeBtn: document.getElementById("saveRecipeBtn"),
-    toast: document.getElementById("toast"),
-    searchName: document.getElementById("searchName"),
-    searchIngredient: document.getElementById("searchIngredient"),
-    searchCategory: document.getElementById("searchCategory"),
-    searchBtn: document.getElementById("searchBtn"),
-    suggestBtn: document.getElementById("suggestBtn"),
-    aiIngredientInput: document.getElementById("aiIngredientInput"),
-    preview: document.getElementById("recipePreview"),
-    form: {
-        title: document.getElementById("newTitle"),
-        category: document.getElementById("newCategory"),
-        image: document.getElementById("newImage"),
-        servings: document.getElementById("newServings"),
-        ingredients: document.getElementById("newIngredients"),
-        steps: document.getElementById("newSteps"),
-    },
+    activeMultiplier: 1,
+    lastSearch: null,
 };
 
 const heartSvg = `<svg class="heart-icon" viewBox="0 0 24 24"><path d="M12 21s-6.72-4.35-9.38-8.39C.24 9.17 1.42 4.9 5.14 3.58A5.28 5.28 0 0 1 12 6.1a5.28 5.28 0 0 1 6.86-2.52c3.72 1.32 4.9 5.59 2.52 9.03C18.72 16.65 12 21 12 21z"/></svg>`;
+
+function toastEl() {
+    return document.getElementById("toast");
+}
 
 async function api(url, options = {}) {
     const response = await fetch(url, {
@@ -56,50 +21,21 @@ async function api(url, options = {}) {
         const err = await response.json().catch(() => ({}));
         throw new Error(err.error || "Request failed");
     }
-    return response.json();
+    // Some endpoints may return empty payloads in the future.
+    return response.json().catch(() => ({}));
 }
 
 function showToast(message) {
-    el.toast.textContent = message;
-    el.toast.classList.remove("hidden");
+    const node = toastEl();
+    if (!node) return;
+    node.textContent = message;
+    node.classList.remove("hidden");
     clearTimeout(showToast.timer);
-    showToast.timer = setTimeout(() => el.toast.classList.add("hidden"), 1800);
+    showToast.timer = setTimeout(() => node.classList.add("hidden"), 1800);
 }
 
 function withLoading(container) {
     container.innerHTML = `<div class="loader">Loading...</div>`;
-}
-
-function switchScreen(target) {
-    Object.entries(el.screens).forEach(([key, node]) => {
-        node.classList.toggle("active", key === target);
-    });
-    el.navItems.forEach((btn) => btn.classList.toggle("active", btn.dataset.target === target));
-}
-
-function renderRecipeCard(recipe) {
-    return `
-        <article class="card recipe-card" data-open-recipe="${recipe.id}">
-            <img class="recipe-image" src="${recipe.image_url}" alt="${recipe.title}">
-            <div class="recipe-meta">
-                <div>
-                    <h3 class="recipe-title">${recipe.title}</h3>
-                    <span class="pill">${recipe.category}</span>
-                </div>
-                <button class="favorite-btn ${recipe.is_favorite ? "active" : ""}" data-fav-id="${recipe.id}">
-                    ${heartSvg}
-                </button>
-            </div>
-        </article>
-    `;
-}
-
-function renderRecipes(container, recipes, emptyNode) {
-    container.innerHTML = recipes.map(renderRecipeCard).join("");
-    emptyNode.classList.toggle("hidden", recipes.length > 0);
-    if (recipes.length === 0) {
-        container.innerHTML = "";
-    }
 }
 
 function formatIngredientText(item, multiplier = 1) {
@@ -109,9 +45,33 @@ function formatIngredientText(item, multiplier = 1) {
     return `${amountText} ${item.unit || ""} ${item.name || item.ingredient_name}`.trim();
 }
 
-function renderShopping() {
-    const shopping = state.shopping;
-    el.shoppingList.innerHTML = shopping
+function renderRecipeCard(recipe) {
+    return `
+        <article class="card recipe-card">
+            <a class="recipe-hero-link" href="/recipe/${recipe.id}">
+                <img class="recipe-image" src="${recipe.image_url}" alt="${recipe.title}">
+            </a>
+            <div class="recipe-meta">
+                <div>
+                    <a class="recipe-title-link" href="/recipe/${recipe.id}">
+                        <h3 class="recipe-title">${recipe.title}</h3>
+                    </a>
+                    <span class="pill">${recipe.category}</span>
+                </div>
+                <button class="favorite-btn ${recipe.is_favorite ? "active" : ""}" data-fav-id="${recipe.id}" aria-label="Toggle favorite">
+                    ${heartSvg}
+                </button>
+            </div>
+        </article>
+    `;
+}
+
+function renderRecipes(container, recipes) {
+    container.innerHTML = recipes.map(renderRecipeCard).join("");
+}
+
+function renderShopping(container, items, emptyNode) {
+    container.innerHTML = items
         .map(
             (item) => `
         <label class="check-item ${item.bought ? "done" : ""}">
@@ -121,111 +81,8 @@ function renderShopping() {
     `
         )
         .join("");
-    el.shoppingEmptyState.classList.toggle("hidden", shopping.length > 0);
-}
-
-function renderPreview() {
-    const title = el.form.title.value || "Your Recipe Title";
-    const category = el.form.category.value || "Category";
-    const image = el.form.image.value || "https://images.unsplash.com/photo-1495195134817-aeb325a55b65?auto=format&fit=crop&w=1200&q=80";
-    el.preview.innerHTML = `
-        <img src="${image}" alt="${title}">
-        <div class="preview-card-body">
-            <h4>${title}</h4>
-            <span class="pill">${category}</span>
-        </div>
-    `;
-}
-
-async function loadRecipes() {
-    withLoading(el.homeRecipeList);
-    state.recipes = await api("/api/recipes");
-    renderRecipes(el.homeRecipeList, state.recipes, el.homeEmptyState);
-}
-
-async function loadFavorites() {
-    state.favorites = await api("/api/favorites");
-    renderRecipes(el.favoriteRecipeList, state.favorites, el.favoritesEmptyState);
-}
-
-async function loadShopping() {
-    state.shopping = await api("/api/shopping-list");
-    renderShopping();
-}
-
-async function toggleFavorite(recipeId) {
-    await api(`/api/favorites/${recipeId}`, { method: "POST" });
-    showToast("Favorite updated");
-    await Promise.all([loadRecipes(), loadFavorites()]);
-}
-
-function openRecipeModal(recipe) {
-    state.activeRecipe = recipe;
-    const baseServings = recipe.servings || 2;
-    let activeMultiplier = 1;
-
-    const renderDetail = () => {
-        el.recipeDetailContent.innerHTML = `
-            <img class="detail-hero" src="${recipe.image_url}" alt="${recipe.title}">
-            <h2>${recipe.title}</h2>
-            <span class="pill">${recipe.category}</span>
-            <h3>Servings</h3>
-            <div class="serving-controls">
-                ${[1, 2, 3, 4]
-                    .map(
-                        (m) =>
-                            `<button class="serving-chip ${m === activeMultiplier ? "active" : ""}" data-multiplier="${m}">
-                                ${m}x
-                            </button>`
-                    )
-                    .join("")}
-            </div>
-            <p class="muted">Base servings: ${baseServings} | Now: ${baseServings * activeMultiplier}</p>
-            <h3>Ingredients</h3>
-            <div class="checklist">
-                ${recipe.ingredients
-                    .map(
-                        (item, idx) => `
-                    <label class="check-item">
-                        <input type="checkbox" data-ingredient-check="${idx}">
-                        <span>${formatIngredientText(item, activeMultiplier)}</span>
-                    </label>
-                `
-                    )
-                    .join("")}
-            </div>
-            <h3>Instructions</h3>
-            <ol>
-                ${recipe.steps.map((step) => `<li>${step}</li>`).join("")}
-            </ol>
-            <button class="btn btn-primary full-width" id="addToShoppingBtn">
-                Add ingredients to shopping list
-            </button>
-        `;
-    };
-
-    renderDetail();
-    el.recipeModal.classList.remove("hidden");
-
-    el.recipeDetailContent.onclick = async (event) => {
-        const servingBtn = event.target.closest("[data-multiplier]");
-        if (servingBtn) {
-            activeMultiplier = Number(servingBtn.dataset.multiplier);
-            renderDetail();
-            return;
-        }
-        if (event.target.id === "addToShoppingBtn") {
-            await api(`/api/shopping-list/from-recipe/${recipe.id}`, { method: "POST" });
-            await loadShopping();
-            showToast("Added to shopping list");
-        }
-    };
-}
-
-function closeRecipeModal() {
-    el.recipeModal.classList.add("hidden");
-    el.recipeDetailContent.innerHTML = "";
-    state.activeRecipe = null;
+    emptyNode.classList.toggle("hidden", items.length > 0);
+    if (items.length === 0) container.innerHTML = "";
 }
 
 function parseIngredientsInput(raw) {
@@ -246,113 +103,275 @@ function parseStepsInput(raw) {
         .filter(Boolean);
 }
 
-async function saveRecipe() {
-    const payload = {
-        title: el.form.title.value.trim(),
-        category: el.form.category.value.trim() || "General",
-        image_url: el.form.image.value.trim(),
-        servings: Number(el.form.servings.value || 2),
-        ingredients: parseIngredientsInput(el.form.ingredients.value),
-        steps: parseStepsInput(el.form.steps.value),
-    };
-    await api("/api/recipes", {
-        method: "POST",
-        body: JSON.stringify(payload),
-    });
-    showToast("Recipe created");
-    el.addRecipeModal.classList.add("hidden");
-    Object.values(el.form).forEach((input) => {
-        input.value = "";
-    });
-    el.form.servings.value = 2;
-    renderPreview();
-    await Promise.all([loadRecipes(), loadFavorites()]);
+function renderAddPreview() {
+    const title = document.getElementById("newTitle")?.value || "Your Recipe Title";
+    const category = document.getElementById("newCategory")?.value || "Category";
+    const imageInput = document.getElementById("newImage")?.value || "";
+    const image = imageInput || "/static/images/placeholder.svg";
+    const preview = document.getElementById("recipePreview");
+    if (!preview) return;
+    preview.innerHTML = `
+        <img src="${image}" alt="${title}">
+        <div class="preview-card-body">
+            <h4>${title}</h4>
+            <span class="pill">${category}</span>
+        </div>
+    `;
+}
+
+async function loadHome() {
+    const list = document.getElementById("homeRecipeList");
+    const empty = document.getElementById("homeEmptyState");
+    if (!list) return;
+    withLoading(list);
+    const recipes = await api("/api/recipes");
+    list.innerHTML = recipes.map(renderRecipeCard).join("");
+    empty.classList.toggle("hidden", recipes.length > 0);
+    if (recipes.length === 0) list.innerHTML = "";
+}
+
+async function loadFavorites() {
+    const list = document.getElementById("favoriteRecipeList");
+    const empty = document.getElementById("favoritesEmptyState");
+    if (!list) return;
+    withLoading(list);
+    const recipes = await api("/api/favorites");
+    list.innerHTML = recipes.map(renderRecipeCard).join("");
+    empty.classList.toggle("hidden", recipes.length > 0);
+    if (recipes.length === 0) list.innerHTML = "";
+}
+
+async function loadShopping() {
+    const list = document.getElementById("shoppingList");
+    const empty = document.getElementById("shoppingEmptyState");
+    if (!list) return;
+    withLoading(list);
+    const items = await api("/api/shopping-list");
+    state.shopping = items;
+    renderShopping(list, items, empty);
+}
+
+async function toggleFavorite(btn) {
+    const recipeId = btn.dataset.favId;
+    const res = await api(`/api/favorites/${recipeId}`, { method: "POST" });
+    const isFav = !!res.is_favorite;
+    btn.classList.toggle("active", isFav);
+    // Keep favorites page in sync.
+    if (document.body.dataset.page === "favorites") {
+        await loadFavorites();
+    }
+    showToast("Favorite updated");
 }
 
 async function runSearch() {
     const params = new URLSearchParams({
-        q: el.searchName.value.trim(),
-        ingredient: el.searchIngredient.value.trim(),
-        category: el.searchCategory.value.trim(),
+        q: document.getElementById("searchName")?.value?.trim() || "",
+        ingredient: document.getElementById("searchIngredient")?.value?.trim() || "",
+        category: document.getElementById("searchCategory")?.value?.trim() || "",
     });
+    state.lastSearch = params.toString();
+    const results = document.getElementById("searchResults");
+    if (!results) return;
+    withLoading(results);
     const data = await api(`/api/recipes?${params.toString()}`);
-    renderRecipes(el.searchResults, data, document.createElement("div"));
     if (data.length === 0) {
-        el.searchResults.innerHTML = `<div class="empty-state">No matching recipes found.</div>`;
+        results.innerHTML = `<div class="empty-state">No matching recipes found.</div>`;
+        return;
     }
+    results.innerHTML = data.map(renderRecipeCard).join("");
 }
 
 async function runSuggestions() {
-    const ingredients = el.aiIngredientInput.value.trim();
+    const ingredients = document.getElementById("aiIngredientInput")?.value?.trim() || "";
+    const results = document.getElementById("searchResults");
+    if (!results) return;
+    withLoading(results);
     const suggestions = await api("/api/suggest-recipes", {
         method: "POST",
         body: JSON.stringify({ ingredients }),
     });
     if (!suggestions.length) {
-        el.searchResults.innerHTML = `<div class="empty-state">No suggestions yet. Try more ingredients.</div>`;
+        results.innerHTML = `<div class="empty-state">No suggestions yet. Try more ingredients.</div>`;
         return;
     }
-    el.searchResults.innerHTML = suggestions
+    results.innerHTML = suggestions
         .map(
             (item) => `
-        <article class="card">
-            <p class="muted">Match score: ${(item.score * 100).toFixed(0)}%</p>
+        <div class="card" style="margin-bottom: 14px; padding: 12px;">
+            <div class="muted">Match score: ${(item.score * 100).toFixed(0)}%</div>
             ${renderRecipeCard(item.recipe)}
-        </article>
+        </div>
     `
         )
         .join("");
 }
 
-function bindGlobalEvents() {
-    el.navItems.forEach((item) => {
-        item.addEventListener("click", () => switchScreen(item.dataset.target));
+function renderRecipeDetail(recipe, checkedIndices = null) {
+    state.activeRecipe = recipe;
+    const hero = document.getElementById("detailHero");
+    const title = document.getElementById("detailTitle");
+    const category = document.getElementById("detailCategory");
+    const servingControls = document.getElementById("servingControls");
+    const servingInfo = document.getElementById("servingInfo");
+    const ingredientsEl = document.getElementById("detailIngredients");
+    const stepsEl = document.getElementById("detailSteps");
+
+    if (!hero || !title || !category || !servingControls || !ingredientsEl || !stepsEl) return;
+
+    const baseServings = recipe.servings || 2;
+    const multiplier = state.activeMultiplier;
+
+    hero.src = recipe.image_url;
+    hero.alt = recipe.title;
+    title.textContent = recipe.title;
+    category.textContent = recipe.category;
+
+    servingControls.innerHTML = [1, 2, 3, 4]
+        .map(
+            (m) => `
+            <button class="serving-chip ${m === multiplier ? "active" : ""}" data-multiplier="${m}">
+                ${m}x
+            </button>
+        `
+        )
+        .join("");
+
+    servingInfo.textContent = `Base servings: ${baseServings} | Now: ${baseServings * multiplier}`;
+
+    const checkedSet = new Set(checkedIndices || []);
+    ingredientsEl.innerHTML = recipe.ingredients
+        .map((item, idx) => {
+            const checked = checkedSet.size ? checkedSet.has(idx) : true;
+            return `
+            <label class="check-item ${checked ? "" : "done"}">
+                <input type="checkbox" data-ingredient-idx="${idx}" ${checked ? "checked" : ""}>
+                <span>${formatIngredientText(item, multiplier)}</span>
+            </label>
+        `;
+        })
+        .join("");
+
+    stepsEl.innerHTML = recipe.steps.map((s) => `<li>${s}</li>`).join("");
+}
+
+async function initRecipeDetail() {
+    const recipeId = window.__COOKMIND_RECIPE_ID__;
+    if (!recipeId) return;
+    const btn = document.getElementById("addSelectedToShoppingBtn");
+    const servingControls = document.getElementById("servingControls");
+    if (!btn || !servingControls) return;
+
+    state.activeMultiplier = 1;
+    const recipe = await api(`/api/recipes/${recipeId}`);
+    renderRecipeDetail(recipe);
+
+    servingControls.addEventListener("click", (event) => {
+        const servingBtn = event.target.closest("[data-multiplier]");
+        if (!servingBtn) return;
+
+        const previousChecked = [...document.querySelectorAll('#detailIngredients input[data-ingredient-idx]:checked')].map(
+            (n) => Number(n.dataset.ingredientIdx)
+        );
+        state.activeMultiplier = Number(servingBtn.dataset.multiplier);
+        renderRecipeDetail(recipe, previousChecked);
     });
 
-    document.body.addEventListener("click", (event) => {
-        const favBtn = event.target.closest("[data-fav-id]");
-        if (favBtn) {
-            event.stopPropagation();
-            toggleFavorite(favBtn.dataset.favId);
+    btn.addEventListener("click", async () => {
+        const selected = [...document.querySelectorAll('#detailIngredients input[data-ingredient-idx]:checked')];
+        if (selected.length === 0) {
+            showToast("Select at least one ingredient");
             return;
         }
-        const card = event.target.closest("[data-open-recipe]");
-        if (card) {
-            const recipe = [...state.recipes, ...state.favorites].find((r) => String(r.id) === card.dataset.openRecipe);
-            if (recipe) openRecipeModal(recipe);
+        const ingredientsScaled = selected.map((n) => {
+            const idx = Number(n.dataset.ingredientIdx);
+            const base = recipe.ingredients[idx];
+            return { name: base.name, amount: Number(base.amount) * state.activeMultiplier, unit: base.unit || "" };
+        });
+
+        await api(`/api/shopping-list/from-recipe/${recipe.id}`, {
+            method: "POST",
+            body: JSON.stringify({ ingredients: ingredientsScaled }),
+        });
+        await loadShopping();
+        showToast("Added to shopping list");
+      });
+}
+
+async function initAddRecipe() {
+    renderAddPreview();
+    ["newTitle", "newCategory", "newImage", "newServings", "newIngredients", "newSteps"].forEach((id) => {
+        const node = document.getElementById(id);
+        if (node) node.addEventListener("input", () => renderAddPreview());
+    });
+
+    const saveBtn = document.getElementById("saveRecipeBtn");
+    if (!saveBtn) return;
+
+    saveBtn.addEventListener("click", async () => {
+        try {
+            const payload = {
+                title: document.getElementById("newTitle").value.trim(),
+                category: document.getElementById("newCategory").value.trim() || "General",
+                image_url: document.getElementById("newImage").value.trim(),
+                servings: Number(document.getElementById("newServings").value || 2),
+                ingredients: parseIngredientsInput(document.getElementById("newIngredients").value),
+                steps: parseStepsInput(document.getElementById("newSteps").value),
+            };
+            await api("/api/recipes", { method: "POST", body: JSON.stringify(payload) });
+            showToast("Recipe created");
+            window.location.href = "/";
+        } catch (err) {
+            showToast(err.message || "Failed to save recipe");
         }
+    });
+}
 
-        const shopToggle = event.target.closest("[data-shopping-id]");
-        if (shopToggle) {
-            api(`/api/shopping-list/${shopToggle.dataset.shoppingId}/toggle`, { method: "POST" })
-                .then(loadShopping)
-                .catch((err) => showToast(err.message));
+function bindGlobalEvents() {
+    document.addEventListener("click", async (event) => {
+        const favBtn = event.target.closest("[data-fav-id]");
+        if (!favBtn) return;
+        event.preventDefault();
+        event.stopPropagation();
+        toggleFavorite(favBtn).catch((err) => showToast(err.message));
+    });
+
+    document.addEventListener("change", async (event) => {
+        const cb = event.target;
+        if (!cb || cb.tagName !== "INPUT") return;
+        if (!cb.dataset.shoppingId) return;
+        const itemId = cb.dataset.shoppingId;
+        try {
+            await api(`/api/shopping-list/${itemId}/toggle`, { method: "POST" });
+            await loadShopping();
+        } catch (err) {
+            showToast(err.message || "Failed to update");
         }
     });
-
-    el.closeRecipeModal.addEventListener("click", closeRecipeModal);
-    el.recipeModal.addEventListener("click", (event) => {
-        if (event.target === el.recipeModal) closeRecipeModal();
-    });
-
-    el.openAddRecipeBtn.addEventListener("click", () => el.addRecipeModal.classList.remove("hidden"));
-    el.closeAddRecipeModal.addEventListener("click", () => el.addRecipeModal.classList.add("hidden"));
-    el.saveRecipeBtn.addEventListener("click", () => {
-        saveRecipe().catch((err) => showToast(err.message));
-    });
-
-    Object.values(el.form).forEach((input) => input.addEventListener("input", renderPreview));
-
-    el.searchBtn.addEventListener("click", () => runSearch().catch((err) => showToast(err.message)));
-    el.suggestBtn.addEventListener("click", () => runSuggestions().catch((err) => showToast(err.message)));
 }
 
 async function init() {
     bindGlobalEvents();
-    renderPreview();
-    await Promise.all([loadRecipes(), loadFavorites(), loadShopping()]);
+    const page = document.body.dataset.page || "home";
+
+    if (page === "home") await loadHome();
+    if (page === "favorites") await loadFavorites();
+    if (page === "shopping") await loadShopping();
+
+    if (page === "search") {
+        const searchBtn = document.getElementById("searchBtn");
+        const suggestBtn = document.getElementById("suggestBtn");
+        if (searchBtn) searchBtn.addEventListener("click", () => runSearch().catch((err) => showToast(err.message)));
+        if (suggestBtn)
+            suggestBtn.addEventListener("click", () => runSuggestions().catch((err) => showToast(err.message)));
+    }
+
+    if (page === "recipe") {
+        await initRecipeDetail();
+    }
+
+    if (page === "add") {
+        await initAddRecipe();
+    }
 }
 
-init().catch((err) => {
-    showToast(err.message || "Initialization failed");
-});
+init().catch((err) => showToast(err.message || "Initialization failed"));

@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="520" viewBox="0 0 800 520">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#24314f"/>
+      <stop offset="1" stop-color="#0b0e14"/>
+    </linearGradient>
+    <linearGradient id="accent" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#7c8cff"/>
+      <stop offset="1" stop-color="#29d6a5"/>
+    </linearGradient>
+  </defs>
+  <rect width="800" height="520" rx="28" fill="url(#bg)"/>
+  <path d="M-20 420 C 120 320, 240 520, 420 410 C 560 325, 650 380, 840 300 L 840 560 L -20 560 Z" fill="rgba(124,140,255,0.14)"/>
+  <circle cx="650" cy="120" r="90" fill="rgba(41,214,165,0.14)"/>
+  <circle cx="650" cy="120" r="45" fill="rgba(41,214,165,0.10)"/>
+  <g>
+    <text x="60" y="160" font-family="Inter, Arial, sans-serif" font-size="44" font-weight="800" fill="#f4f7ff">CookMind</text>
+    <text x="60" y="214" font-family="Inter, Arial, sans-serif" font-size="18" font-weight="500" fill="#9da7bf">Recipe placeholder</text>
+  </g>
+  <rect x="60" y="250" width="340" height="10" rx="5" fill="url(#accent)"/>
+</svg>
+

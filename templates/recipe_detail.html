@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+
+{% block content %}
+    <section class="screen active">
+        <div class="card" style="padding: 0; overflow: hidden;">
+            <img id="detailHero" class="detail-hero" src="" alt="Recipe image">
+            <div style="padding: 14px 14px 6px;">
+                <h2 id="detailTitle" style="margin: 0;"></h2>
+                <span id="detailCategory" class="pill"></span>
+                <div style="margin-top: 14px;">
+                    <h3 style="margin: 0 0 8px;">Servings</h3>
+                    <div id="servingControls" class="serving-controls"></div>
+                    <p id="servingInfo" class="muted" style="margin-top: 6px;"></p>
+                </div>
+            </div>
+        </div>
+
+        <div style="height: 14px;"></div>
+
+        <div class="card">
+            <h3 style="margin-top: 0;">Ingredients</h3>
+            <div id="detailIngredients" class="checklist"></div>
+            <div style="height: 10px;"></div>
+            <button id="addSelectedToShoppingBtn" class="btn btn-primary full-width">
+                Add selected ingredients to shopping list
+            </button>
+        </div>
+
+        <div style="height: 14px;"></div>
+
+        <div class="card">
+            <h3 style="margin-top: 0;">Instructions</h3>
+            <ol id="detailSteps" style="margin-top: 10px;"></ol>
+        </div>
+    </section>
+
+    <script>
+        // Minimal bootstrapping: recipe id comes from the URL.
+        window.__COOKMIND_RECIPE_ID__ = {{ recipe_id }};
+    </script>
+{% endblock %}
+

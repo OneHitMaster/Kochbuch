@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+
+{% block content %}
+    <section class="screen active">
+        <div class="card" style="padding: 16px;">
+            <h2>Add Recipe</h2>
+            <div class="form-grid" style="margin-top: 12px;">
+                <div>
+                    <input id="newTitle" class="input" placeholder="Recipe title">
+                    <input id="newCategory" class="input" placeholder="Category (e.g. Dinner)">
+                    <input id="newImage" class="input" placeholder="Image URL (optional)">
+                    <input id="newServings" class="input" type="number" min="1" value="2" placeholder="Servings">
+                    <textarea id="newIngredients" class="input textarea" placeholder="Ingredients (one per line, e.g. Sugar|100|g)"></textarea>
+                    <textarea id="newSteps" class="input textarea" placeholder="Steps (one per line)"></textarea>
+                    <button id="saveRecipeBtn" class="btn btn-primary full-width">Save Recipe</button>
+                </div>
+                <div>
+                    <h3 style="margin-top: 0;">Live Preview</h3>
+                    <div id="recipePreview" class="preview-card"></div>
+                </div>
+            </div>
+        </div>
+    </section>
+{% endblock %}
+

@@ -49,6 +49,7 @@ body {
 
 .screen.active {
     display: block;
+    animation: fadeIn 280ms ease;
 }
 
 .card-grid {
@@ -209,6 +210,29 @@ body {
     padding: 8px 2px;
     border-radius: 12px;
     cursor: pointer;
+}
+
+.nav-item,
+.nav-item:visited {
+    text-decoration: none;
+}
+
+.recipe-hero-link {
+    display: block;
+    text-decoration: none;
+}
+
+.recipe-title-link {
+    text-decoration: none;
+    color: inherit;
+}
+
+.recipe-title-link .recipe-title {
+    margin: 0;
+}
+
+.page-content {
+    animation: fadeIn 280ms ease;
 }
 
 .nav-item.active {

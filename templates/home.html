@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+
+{% block content %}
+    <section class="screen active">
+        <div class="screen-actions">
+            <a class="btn btn-primary" href="/recipes/new">Add Recipe</a>
+        </div>
+
+        <div id="homeRecipeList" class="card-grid"></div>
+
+        <div id="homeEmptyState" class="empty-state hidden">
+            <p>No recipes yet. Add your first one!</p>
+        </div>
+    </section>
+{% endblock %}
+

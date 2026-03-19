@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CookMind</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+</head>
+<body>
+    <div class="app-shell">
+        <header class="top-header">
+            <div>
+                <h1>CookMind</h1>
+                <p class="subtitle">Your personal online cookbook</p>
+            </div>
+        </header>
+
+        <main id="appMain">
+            <section id="screen-home" class="screen active">
+                <div class="screen-actions">
+                    <button id="openAddRecipeBtn" class="btn btn-primary">Add Recipe</button>
+                </div>
+                <div id="homeRecipeList" class="card-grid"></div>
+                <div id="homeEmptyState" class="empty-state hidden">
+                    <p>No recipes yet. Add your first one!</p>
+                </div>
+            </section>
+
+            <section id="screen-search" class="screen">
+                <div class="card search-panel">
+                    <h2>Search Recipes</h2>
+                    <input id="searchName" class="input" placeholder="Search by name">
+                    <input id="searchIngredient" class="input" placeholder="Search by ingredient">
+                    <input id="searchCategory" class="input" placeholder="Search by category">
+                    <button id="searchBtn" class="btn btn-primary full-width">Search</button>
+                </div>
+                <div class="card ai-panel">
+                    <h2>AI Suggestion</h2>
+                    <p class="muted">What ingredients do you have? (comma separated)</p>
+                    <input id="aiIngredientInput" class="input" placeholder="e.g. pasta, garlic, tomato">
+                    <button id="suggestBtn" class="btn btn-secondary full-width">Suggest Recipes</button>
+                </div>
+                <div id="searchResults" class="card-grid"></div>
+            </section>
+
+            <section id="screen-favorites" class="screen">
+                <h2 class="section-title">Favorites</h2>
+                <div id="favoriteRecipeList" class="card-grid"></div>
+                <div id="favoritesEmptyState" class="empty-state hidden">
+                    <p>You have no favorite recipes yet.</p>
+                </div>
+            </section>
+
+            <section id="screen-shopping" class="screen">
+                <h2 class="section-title">Shopping List</h2>
+                <div id="shoppingList" class="checklist"></div>
+                <div id="shoppingEmptyState" class="empty-state hidden">
+                    <p>Your shopping list is empty. Add ingredients from a recipe.</p>
+                </div>
+            </section>
+        </main>
+
+        <nav class="bottom-nav">
+            <button class="nav-item active" data-target="home">
+                <svg viewBox="0 0 24 24" class="nav-icon"><path d="M3 10.5L12 3l9 7.5V21a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg>
+                <span>Home</span>
+            </button>
+            <button class="nav-item" data-target="search">
+                <svg viewBox="0 0 24 24" class="nav-icon"><path d="M10.5 3a7.5 7.5 0 1 1 4.74 13.32l4.72 4.72-1.42 1.42-4.72-4.72A7.5 7.5 0 0 1 10.5 3zm0 2a5.5 5.5 0 1 0 0 11 5.5 5.5 0 0 0 0-11z"/></svg>
+                <span>Search</span>
+            </button>
+            <button class="nav-item" data-target="favorites">
+                <svg viewBox="0 0 24 24" class="nav-icon"><path d="M12 21s-6.72-4.35-9.38-8.39C.24 9.17 1.42 4.9 5.14 3.58A5.28 5.28 0 0 1 12 6.1a5.28 5.28 0 0 1 6.86-2.52c3.72 1.32 4.9 5.59 2.52 9.03C18.72 16.65 12 21 12 21z"/></svg>
+                <span>Favorites</span>
+            </button>
+            <button class="nav-item" data-target="shopping">
+                <svg viewBox="0 0 24 24" class="nav-icon"><path d="M3 4h2l2.4 10.4a1 1 0 0 0 .98.8h8.72a1 1 0 0 0 .98-.8L21 7H7"/><circle cx="10" cy="20" r="1.5"/><circle cx="18" cy="20" r="1.5"/></svg>
+                <span>Shopping List</span>
+            </button>
+        </nav>
+    </div>
+
+    <div id="recipeModal" class="modal hidden">
+        <div class="modal-content">
+            <button id="closeRecipeModal" class="icon-btn">x</button>
+            <div id="recipeDetailContent"></div>
+        </div>
+    </div>
+
+    <div id="addRecipeModal" class="modal hidden">
+        <div class="modal-content large">
+            <button id="closeAddRecipeModal" class="icon-btn">x</button>
+            <h2>Add Recipe</h2>
+            <div class="form-grid">
+                <div>
+                    <input id="newTitle" class="input" placeholder="Recipe title">
+                    <input id="newCategory" class="input" placeholder="Category">
+                    <input id="newImage" class="input" placeholder="Image URL">
+                    <input id="newServings" class="input" type="number" min="1" value="2" placeholder="Servings">
+                    <textarea id="newIngredients" class="input textarea" placeholder="Ingredients (one per line, e.g. Sugar|100|g)"></textarea>
+                    <textarea id="newSteps" class="input textarea" placeholder="Steps (one per line)"></textarea>
+                    <button id="saveRecipeBtn" class="btn btn-primary full-width">Save Recipe</button>
+                </div>
+                <div>
+                    <h3>Live Preview</h3>
+                    <div id="recipePreview" class="preview-card"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="toast" class="toast hidden"></div>
+
+    <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+</body>
+</html>

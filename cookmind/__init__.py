@@ -1,3 +1,5 @@
+from pathlib import Path
+
 from flask import Flask
 
 from .db import init_db
@@ -8,7 +10,14 @@ from .blueprints.suggestions_api import suggestions_api
 
 
 def create_app() -> Flask:
-    app = Flask(__name__)
+    # Flask sucht Templates/Static standardmäßig relativ zum Package-Ordner.
+    # Da das Projekt aber Templates/Static im Projekt-Root hat, setzen wir die Ordner explizit.
+    root_dir = Path(__file__).resolve().parents[1]
+    app = Flask(
+        __name__,
+        template_folder=str(root_dir / "templates"),
+        static_folder=str(root_dir / "static"),
+    )
 
     # API blueprints
     app.register_blueprint(recipes_api)

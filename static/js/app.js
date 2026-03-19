@@ -238,10 +238,12 @@ function renderRecipeDetail(recipe, checkedIndices = null) {
 
     servingInfo.textContent = `Base servings: ${baseServings} | Now: ${baseServings * multiplier}`;
 
-    const checkedSet = new Set(checkedIndices || []);
+    // `checkedIndices === null` means "default rendering".
+    // If the user deselects everything, we must preserve that empty selection.
+    const checkedSet = checkedIndices === null ? null : new Set(checkedIndices);
     ingredientsEl.innerHTML = recipe.ingredients
         .map((item, idx) => {
-            const checked = checkedSet.size ? checkedSet.has(idx) : true;
+            const checked = checkedSet === null ? true : checkedSet.has(idx);
             return `
             <label class="check-item ${checked ? "" : "done"}">
                 <input type="checkbox" data-ingredient-idx="${idx}" ${checked ? "checked" : ""}>

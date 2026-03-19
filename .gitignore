@@ -1,0 +1,23 @@
+# Python / Flask
+__pycache__/
+*.py[cod]
+*.pyo
+*.db
+cookmind.db
+
+# Virtual environments
+.venv/
+venv/
+
+# Flask / app runtime files
+instance/
+
+# Editor / OS files
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
